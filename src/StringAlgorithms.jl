@@ -1,5 +1,5 @@
 module StringAlgorithms
 
-# Write your package code here.
+include("PalindromicAutomata.jl")
 
 end
