@@ -43,6 +43,7 @@ SuffixAutomaton{T}() where {T} = SuffixAutomaton{T}(
 function SuffixAutomaton(v)
     T = eltype(v)
     sam = SuffixAutomaton{T}()
+    sizehint!(sam, length(v))
     for vi in v
         push!(sam, vi)
     end

@@ -6,13 +6,7 @@
         end
 
         function solve(s)
-            T = eltype(s)
-            sam = SuffixAutomaton{T}()
-            sizehint!(sam, length(s))
-            for ch in s
-                push!(sam, ch)
-            end
-
+            sam = SuffixAutomaton(s)
             nodes = nodeoriented(sam)
             return sum(nodes[i].len - nodes[nodes[i].link].len for i in eachindex(nodes) if i >= 2)
         end
