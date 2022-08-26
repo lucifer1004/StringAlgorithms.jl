@@ -19,14 +19,15 @@ function Base.sizehint!(pam::PalindromicAutomaton, sz)
     Base.sizehint!(pam.len, sz + 2)
     Base.sizehint!(pam.fail, sz + 2)
     Base.sizehint!(pam.cnt, sz + 2)
+    Base.sizehint!(pam.children, sz + 2)
 end
 
-@inline children(pam::PalindromicAutomaton) = pam.children
-@inline nodes(pam::PalindromicAutomaton) = length(pam.cnt)
-@inline lastnodeindex(pam::PalindromicAutomaton) = pam.lastnodeindex
-@inline len(pam::PalindromicAutomaton, i) = pam.len[i]
-@inline fail(pam::PalindromicAutomaton, i) = pam.fail[i]
-@inline cnt(pam::PalindromicAutomaton, i) = pam.cnt[i]
+children(pam::PalindromicAutomaton) = pam.children
+nodes(pam::PalindromicAutomaton) = length(pam.cnt)
+lastnodeindex(pam::PalindromicAutomaton) = pam.lastnodeindex
+len(pam::PalindromicAutomaton, i) = pam.len[i]
+fail(pam::PalindromicAutomaton, i) = pam.fail[i]
+cnt(pam::PalindromicAutomaton, i) = pam.cnt[i]
 
 function createnode!(pam::PalindromicAutomaton{T}, node_len, node_fail) where {T}
     push!(pam.len, node_len)

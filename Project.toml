@@ -3,8 +3,5 @@ uuid = "643b1d47-3f53-4b81-a7a3-63e902513088"
 authors = ["Gabriel Wu <wuzihua@pku.edu.cn> and contributors"]
 version = "0.1.0"
 
-[deps]
-Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
-
 [compat]
 julia = "1.8"

@@ -16,7 +16,7 @@ For example, for string `ababc`,
 - Finding all matches (KMP algorithm)
 
 ```jldoctest
-# The following function finds all occurrences of the pattern in the given vector, including overlapping ones, while `Base.findall` only finds non-overlapping ones.
+# The following function finds all occurrences of the pattern in the given vector, including overlapping ones.
 function findall(pattern, s)
     n, m = length(s), length(pattern)
     tmp = vcat(collect(pattern), [nothing], collect(s))
