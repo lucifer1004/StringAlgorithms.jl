@@ -24,32 +24,72 @@
         end
     end
 
-    @testset "Longest Common Substring of Two" begin
-        function naive(s, t)
-            n = length(t)
+    @testset "Longest Common Substring" begin
+        function naive(args...)
+            shortest = argmin(length.(args))
+            n = length(args[shortest])
             best = 0
-            bestpos = 0
+            bestset = Set{typeof(args[1])}()
             for i in 1:n
                 for j in i:n
-                    if j - i + 1 > best && !isnothing(findfirst(t[i:j], s))
-                        best = j - i + 1
-                        bestpos = j
+                    if j - i + 1 >= best
+                        good = true
+                        for k in eachindex(args)
+                            if k != shortest && isnothing(findfirst(args[shortest][i:j], args[k]))
+                                good = false
+                                break
+                            end
+                        end
+                        if good
+                            if j - i + 1 > best
+                                bestset = Set{typeof(args[1])}()
+                                best = j - i + 1
+                            end
+                            if j - i + 1 == best
+                                push!(bestset, args[shortest][i:j])
+                            end
+                        end
                     end
                 end
             end
-            return t[bestpos-best+1:bestpos]
+
+            return collect(bestset)
         end
 
         @testset "Fixed" begin
-            @test longestcommonsubstring("aba", "a") == "a"
-            @test longestcommonsubstring("aaccaa", "accdaf") == "acc"
+            @test_throws ErrorException("At least one string/vector should be given!") longestcommonsubstring([])
+            @test_throws ErrorException("At least one string/vector should be given!") longestcommonsubstring()
+            @test longestcommonsubstring("abc") == ["abc"]
+            @test longestcommonsubstring("abc"; lengthonly=true) == 3
+            @test longestcommonsubstring("") == []
+            @test longestcommonsubstring(""; lengthonly=true) == 0
+            @test longestcommonsubstring("abc", "d") == []
+            @test longestcommonsubstring("abc", "d"; lengthonly=true) == 0
+            @test longestcommonsubstring("aba", "a") == ["a"]
+            @test longestcommonsubstring("aba", "a"; lengthonly=true) == 1
+            @test sort(longestcommonsubstring("abxbd", "abcbd")) == ["ab", "bd"]
+            @test longestcommonsubstring("abxbd", "abcbd"; lengthonly=true) == 2
+            @test longestcommonsubstring("abxbd", "abcxbd") == ["xbd"]
+            @test longestcommonsubstring("abxbd", "abcxbd"; lengthonly=true) == 3
+            @test longestcommonsubstring("aaccaa", "accdaf") == ["acc"]
+            @test longestcommonsubstring("aaccaa", "accdaf"; lengthonly=true) == 3
+            @test sort(longestcommonsubstring("abxcd", "abtcd", "abecd")) == ["ab", "cd"]
+            @test longestcommonsubstring("abxcd", "abtcd", "abecd"; lengthonly=true) == 2
         end
 
-        @testset "Random $alphabet" for alphabet in ['a':'b', 'a':'c', 'a':'d']
+        @testset "Random $alphabet (2 objects)" for alphabet in ['a':'b', 'a':'c', 'a':'d']
             for _ in 1:100
                 s = join(rand(alphabet, 100))
                 t = join(rand(alphabet, 100))
-                @test longestcommonsubstring(s, t) == naive(s, t)
+                @test sort(longestcommonsubstring(s, t)) == sort(naive(s, t))
+            end
+        end
+
+        @testset "Random $alphabet (multiple objects)" for alphabet in ['a':'b', 'a':'c', 'a':'d']
+            for _ in 1:100
+                num = rand(3:5)
+                args = [join(rand(alphabet, 30)) for _ in 1:num]
+                @test sort(longestcommonsubstring(args)) == sort(naive(args...))
             end
         end
     end

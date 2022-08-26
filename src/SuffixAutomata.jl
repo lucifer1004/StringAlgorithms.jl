@@ -1,8 +1,9 @@
-export SuffixAutomaton, nodeoriented, longestcommonsubstring, minimumrotation, maximumrotation
+export SuffixAutomaton, nodeoriented, toposort, longestcommonsubstring, minimumrotation, maximumrotation
 
 struct SuffixAutomatonNode{T}
     len::Int
     link::Int
+    firstpos::Int
     children::Dict{T,Int}
 end
 
@@ -10,6 +11,7 @@ mutable struct SuffixAutomaton{T} <: AbstractVector{T}
     const values::Vector{T}
     const len::Vector{Int}
     const link::Vector{Int}
+    const firstpos::Vector{Int}
     const nodefirst::Vector{Int}
     const nodelast::Vector{Int}
     const nxt::Vector{Int}
@@ -19,6 +21,7 @@ mutable struct SuffixAutomaton{T} <: AbstractVector{T}
 end
 
 Base.size(sam::SuffixAutomaton) = size(sam.values)
+Base.getindex(sam::SuffixAutomaton, i) = sam.values[i]
 
 """
 Create an empty suffix automaton of key type `T`.
@@ -32,6 +35,7 @@ SuffixAutomaton{T}() where {T} = SuffixAutomaton{T}(
     T[], # values
     [0], # len
     [0], # link
+    [0], # firstpos
     [0], # nodefirst
     [0], # nodelast
     Int[], # nxt
@@ -54,6 +58,7 @@ function Base.sizehint!(sam::SuffixAutomaton, sz)
     sizehint!(sam.values, sz)
     sizehint!(sam.len, sz + 1)
     sizehint!(sam.link, sz + 1)
+    sizehint!(sam.firstpos, sz + 1)
     sizehint!(sam.nodefirst, sz + 1)
     sizehint!(sam.nodelast, sz + 1)
     sizehint!(sam.nxt, 2sz)
@@ -61,15 +66,16 @@ function Base.sizehint!(sam::SuffixAutomaton, sz)
     sizehint!(sam.children, 2sz)
 end
 
-function _insertnode!(sam::SuffixAutomaton, len, link)
+function _insertnode!(sam::SuffixAutomaton, len, link, firstpos)
     push!(sam.len, len)
     push!(sam.link, link)
+    push!(sam.firstpos, firstpos)
     push!(sam.nodefirst, 0)
     push!(sam.nodelast, 0)
 end
 
 function _clonenode!(sam::SuffixAutomaton, len, source)
-    _insertnode!(sam, len, sam.link[source])
+    _insertnode!(sam, len, sam.link[source], sam.firstpos[source])
     current = lastindex(sam.len)
     p = sam.nodefirst[source]
     while p != 0
@@ -103,15 +109,15 @@ function Base.push!(sam::SuffixAutomaton{T}, value::T) where {T}
         p = sam.link[p]
     end
     if p == 0
-        _insertnode!(sam, current_len, 1)
+        _insertnode!(sam, current_len, 1, current_len)
     else
         q = sam.children[(p, value)]
         q_len = q == current ? current_len : sam.len[q]
         if sam.len[p] + 1 == q_len
-            _insertnode!(sam, current_len, q)
+            _insertnode!(sam, current_len, q, current_len)
         else
             clone = current + 1
-            _insertnode!(sam, current_len, clone)
+            _insertnode!(sam, current_len, clone, current_len)
             _clonenode!(sam, sam.len[p] + 1, q)
             while p > 0 && get(sam.children, (p, value), nothing) == q
                 sam.children[(p, value)] = clone
@@ -132,6 +138,7 @@ function nodeoriented(sam::SuffixAutomaton{T}) where {T}
     map(eachindex(sam.len)) do i
         len = sam.len[i]
         link = sam.link[i]
+        firstpos = sam.firstpos[i]
         children = Dict{T,Int}()
         p = sam.nodefirst[i]
         while p != 0
@@ -139,42 +146,100 @@ function nodeoriented(sam::SuffixAutomaton{T}) where {T}
             children[key] = sam.children[(i, key)]
             p = sam.nxt[p]
         end
-        SuffixAutomatonNode(len, link, children)
+        SuffixAutomatonNode(len, link, firstpos, children)
     end
 end
 
 """
-Find the longest common substring/sub-vector of two strings/vectors. When there are more than one with the same length, the first occurring in `t` will be returned.
+Find the topological order of all nodes in a suffix automaton.
 """
-function longestcommonsubstring(s, t)
-    sam = SuffixAutomaton(s)
-    v = 1
-    best = 0
-    bestpos = 0
-    l = 0
-    for (i, ti) in enumerate(t)
-        while v > 0 && !haskey(sam.children, (v, ti))
-            v = sam.link[v]
-            if v > 0
+function toposort(sam::SuffixAutomaton)
+    n = length(sam.len)
+    t = fill(0, length(sam) + 1)
+    a = fill(0, n)
+    for i in 1:n
+        t[sam.len[i]+1] += 1
+    end
+    for i in 2:length(sam)+1
+        t[i] += t[i-1]
+    end
+    for i in 1:n
+        a[t[sam.len[i]+1]] = i
+        t[sam.len[i]+1] -= 1
+    end
+    return a
+end
+
+"""
+Find the longest common non-empty substring/sub-vector of multiple strings/vectors. 
+
+When there are more than one with the same length, all distinct answers will be returned in a random order.
+"""
+function longestcommonsubstring(args...; lengthonly=false)
+    length(args) == 0 && error("At least one string/vector should be given!")
+
+    VT = typeof(args[1])
+    if length(args) == 1
+        return lengthonly ? length(args[1]) : length(args[1]) > 0 ? [args[1]] : VT[]
+    end
+
+    shortest = argmin(length.(args))
+    if length(args[shortest]) == 0
+        return lengthonly ? 0 : VT[]
+    end
+
+    sam = SuffixAutomaton(args[shortest])
+    n = length(sam.len)
+    minn = copy(sam.len)
+    maxi = fill(0, n)
+    topo = toposort(sam)
+    for idx in eachindex(args)
+        if idx == shortest
+            continue
+        end
+
+        fill!(maxi, 0)
+        v = 1
+        l = 0
+        for ti in args[idx]
+            while v > 1 && !haskey(sam.children, (v, ti))
+                v = sam.link[v]
                 l = sam.len[v]
             end
+            if haskey(sam.children, (v, ti))
+                v = sam.children[(v, ti)]
+                l += 1
+            end
+            maxi[v] = max(maxi[v], l)
         end
-        if haskey(sam.children, (v, ti))
-            v = sam.children[(v, ti)]
-            l += 1
-        end
-        if l > best
-            best = l
-            bestpos = i
+
+        for k in n:-1:2
+            i = topo[k]
+            minn[i] = min(minn[i], maxi[i])
+            maxi[sam.link[i]] = max(maxi[sam.link[i]], maxi[i])
         end
     end
 
-    return t[bestpos-best+1:bestpos]
+    hi = maximum(minn)
+    if lengthonly
+        return hi
+    end
+    if hi == 0
+        return VT[]
+    end
+
+    s = Set{VT}()
+    for i in 2:n
+        if minn[i] == hi
+            start = sam.firstpos[i] - hi + 1
+            push!(s, args[shortest][start:start+hi-1])
+        end
+    end
+
+    return collect(s)
 end
 
-# TODO: implement LCS of multiple strings
-function longestcommonsubstring(args...)
-end
+longestcommonsubstring(v::AbstractVector) = longestcommonsubstring(v...)
 
 """
 Find the minimum of all rotations of the given string/vector. 
