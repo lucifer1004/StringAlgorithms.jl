@@ -177,7 +177,9 @@ function longestcommonsubstring(args...)
 end
 
 """
-Find the minimum of all rotations of the given string/vector.
+Find the minimum of all rotations of the given string/vector. 
+
+For example, string `aab` has three rotations:, `aab`, `aba`, `baa`, and `aab` is the minimum rotation.
 """
 function minimumrotation(s)
     n = length(s)
@@ -207,6 +209,8 @@ end
 
 """
 Find the maximum of all rotations of the given string/vector.
+
+For example, string `aab` has three rotations:, `aab`, `aba`, `baa`, and `baa` is the maximum rotation.
 """
 function maximumrotation(s)
     n = length(s)
