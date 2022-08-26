@@ -1,4 +1,4 @@
-export PalindromicAutomaton, children, nodes, lastnodeindex, len, fail, cnt
+export PalindromicAutomaton, children, nodecount, lastnodeindex, len, fail, cnt
 
 const ODD_ROOT = 1
 const EVEN_ROOT = 2
@@ -12,24 +12,24 @@ mutable struct PalindromicAutomaton{T} <: AbstractVector{T}
     lastnodeindex::Int
 end
 
-Base.size(pam::PalindromicAutomaton) = Base.size(pam.values)
+Base.size(pam::PalindromicAutomaton) = size(pam.values)
 Base.getindex(pam::PalindromicAutomaton, i) = i == 0 ? nothing : pam.values[i]
 function Base.sizehint!(pam::PalindromicAutomaton, sz)
-    Base.sizehint!(pam.values, sz)
-    Base.sizehint!(pam.len, sz + 2)
-    Base.sizehint!(pam.fail, sz + 2)
-    Base.sizehint!(pam.cnt, sz + 2)
-    Base.sizehint!(pam.children, sz + 2)
+    sizehint!(pam.values, sz)
+    sizehint!(pam.len, sz + 2)
+    sizehint!(pam.fail, sz + 2)
+    sizehint!(pam.cnt, sz + 2)
+    sizehint!(pam.children, sz + 2)
 end
 
 children(pam::PalindromicAutomaton) = pam.children
-nodes(pam::PalindromicAutomaton) = length(pam.cnt)
+nodecount(pam::PalindromicAutomaton) = length(pam.cnt)
 lastnodeindex(pam::PalindromicAutomaton) = pam.lastnodeindex
 len(pam::PalindromicAutomaton, i) = pam.len[i]
 fail(pam::PalindromicAutomaton, i) = pam.fail[i]
 cnt(pam::PalindromicAutomaton, i) = pam.cnt[i]
 
-function createnode!(pam::PalindromicAutomaton{T}, node_len, node_fail) where {T}
+function _insertnode!(pam::PalindromicAutomaton{T}, node_len, node_fail) where {T}
     push!(pam.len, node_len)
     push!(pam.fail, node_fail)
     push!(pam.cnt, 0)
@@ -48,7 +48,7 @@ To add new values into the automaton, simply use `Base.push!`.
 Getters for the internal fields of the automaton are provided, including:
 
 - `children(pam)`: Get the children dictionary of the PAM.
-- `nodes(pam)`: Get the number of nodes in the PAM.
+- `nodecount(pam)`: Get the number of nodes in the PAM.
 - `lastnodeindex(pam)`: Get the index of the last node of the PAM.
 - `len(pam, i)`: Get the palindrome length of the i-th node.
 - `fail(pam, i)`: Get the fail pointer of the i-th node.
@@ -78,12 +78,12 @@ longest_palindromic_substring("ddabababacc")
 """
 function PalindromicAutomaton{T}() where {T}
     pam = PalindromicAutomaton{T}(T[], Int[], Dict(), Int[], Int[], 1)
-    createnode!(pam, -1, ODD_ROOT)
-    createnode!(pam, 0, ODD_ROOT)
+    _insertnode!(pam, -1, ODD_ROOT)
+    _insertnode!(pam, 0, ODD_ROOT)
     return pam
 end
 
-function getfail(pam::PalindromicAutomaton{T}, x) where {T}
+function _getfail(pam::PalindromicAutomaton{T}, x) where {T}
     while pam[end-pam.len[x]-1] != pam[end]
         x = pam.fail[x]
     end
@@ -92,9 +92,9 @@ end
 
 function Base.push!(pam::PalindromicAutomaton{T}, value::T) where {T}
     push!(pam.values, value)
-    now = getfail(pam, pam.lastnodeindex)
+    now = _getfail(pam, pam.lastnodeindex)
     if !haskey(pam.children, (now, value))
-        createnode!(pam, pam.len[now] + 2, get(pam.children, (getfail(pam, pam.fail[now]), value), EVEN_ROOT))
+        _insertnode!(pam, pam.len[now] + 2, get(pam.children, (_getfail(pam, pam.fail[now]), value), EVEN_ROOT))
         pam.children[(now, value)] = length(pam.len)
     end
     pam.lastnodeindex = pam.children[(now, value)]

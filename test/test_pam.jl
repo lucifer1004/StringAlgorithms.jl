@@ -20,7 +20,7 @@
                 push!(pam, ch)
             end
 
-            c = zeros(Int, nodes(pam))
+            c = zeros(Int, nodecount(pam))
             for i in length(c):-1:1
                 c[i] += cnt(pam, i)
                 c[fail(pam, i)] += c[i]
