@@ -15,23 +15,9 @@
             @test solve("dababababae") == 9
         end
 
-        @testset "Random a..d" begin
+        @testset "Random $alphabet" for alphabet in ['a':'d', 'a':'i', 'a':'z']
             for _ in 1:100
-                s = join(Char.(rand(97:100, 100)))
-                @test solve(s) == naive(s)
-            end
-        end
-
-        @testset "Random a..i" begin
-            for _ in 1:100
-                s = join(Char.(rand(97:106, 100)))
-                @test solve(s) == naive(s)
-            end
-        end
-
-        @testset "Random a..z" begin
-            for _ in 1:100
-                s = join(Char.(rand(97:122, 100)))
+                s = join(rand(alphabet, 100))
                 @test solve(s) == naive(s)
             end
         end

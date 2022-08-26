@@ -7,5 +7,7 @@
 
 This package implements a series of string algorithms in Julia, including:
 
-- Manacher's algorithm
+- Manacher's Algorithm
+- Prefix Function & Prefix Automaton
+- Z Algorithm
 - Palindromic AutoMaton (PAM)
