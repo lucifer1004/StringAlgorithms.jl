@@ -11,7 +11,6 @@ This package implements a series of string algorithms in Julia, including:
 - Prefix Function & Prefix Automaton
 - Z Algorithm
 - Suffix AutoMaton (SAM)
-  - Longest Common Substring of Two
-  - Longest Common Substring of Many (WIP)
+  - Longest Common Substring (of two or more strings/vectors)
   - Minimum/Maximum Rotation
 - Palindromic AutoMaton (PAM)
