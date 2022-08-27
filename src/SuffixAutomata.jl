@@ -294,6 +294,13 @@ julia> longestcommonsubstring("ababab", "bababa", "abaabb")
 1-element Vector{String}:
  "aba"
 ```
+
+If keyword argument `lengthonly` is set to `true`, only the length of the longest common substring will be returned.
+
+```jldoctest
+julia> longestcommonsubstring("ababab", "bababa", "abaabb"; lengthonly=true)
+3
+```
 """
 function longestcommonsubstring(args...; lengthonly=false)
     length(args) == 0 && error("At least one string/vector should be given!")
@@ -359,7 +366,7 @@ function longestcommonsubstring(args...; lengthonly=false)
     return collect(s)
 end
 
-longestcommonsubstring(v::AbstractVector) = longestcommonsubstring(v...)
+longestcommonsubstring(v::AbstractVector; lengthonly=false) = longestcommonsubstring(v...; lengthonly=lengthonly)
 
 """
 $(SIGNATURES)
