@@ -11,6 +11,7 @@ This package implements a series of string algorithms in Julia, including:
 - Prefix Function & Prefix Automaton
 - Z Algorithm
 - Suffix AutoMaton (SAM)
+  - Find number of occurrences of a pattern (`Base.count`)
   - Find the first occurrence of a pattern (`Base.findfirst`)
   - Find all occurrences of a pattern (`Base.findall`)
   - Longest common substring (of two or more strings/vectors)

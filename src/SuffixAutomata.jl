@@ -1,4 +1,4 @@
-export SuffixAutomaton, nodeoriented, toposort, inverselink, longestcommonsubstring, minimumrotation, maximumrotation
+export SuffixAutomaton, nodeoriented, toposort, inverselink, freqcount, longestcommonsubstring, minimumrotation, maximumrotation
 
 struct SuffixAutomatonNode{T}
     len::Int
@@ -157,7 +157,7 @@ end
 """
 $(SIGNATURES)
 
-Find the topological order of all nodes in a suffix automaton.
+Find the topological order of all nodes in a suffix automaton. (Equivalent to sorting all nodes in the ascending order according to their length.)
 """
 function toposort(sam::SuffixAutomaton)
     n = length(sam.len)
@@ -174,6 +174,24 @@ function toposort(sam::SuffixAutomaton)
         t[sam.len[i]+1] -= 1
     end
     return a
+end
+
+"""
+$(SIGNATURES)
+
+Calculate the size of the end-position set of each node.
+"""
+function freqcount(sam::SuffixAutomaton, topo=toposort(sam))
+    n = length(topo)
+    cnt = fill(0, n)
+    for k in n:-1:2
+        i = topo[k]
+        if !sam.isclone[i]
+            cnt[i] += 1
+        end
+        cnt[sam.link[i]] += cnt[i]
+    end
+    return cnt
 end
 
 """
@@ -215,6 +233,30 @@ end
 """
 $(SIGNATURES)
 
+Count the number of occurrences of a pattern in the suffix automaton, including overlapping ones.
+
+With a precalculated frequency array, this function can be extremely fast compared to Julia standar library's implementation.
+
+```jldoctest
+julia> sam = SuffixAutomaton("abcdabdabcddabcabdab");
+
+julia> freq = freqcount(sam);
+
+julia> count("ab", sam, freq)
+6
+
+julia> count("da", sam, freq)
+4
+```
+"""
+function Base.count(pattern, sam::SuffixAutomaton, freq=freqcount(sam))
+    p = _findfirst(sam, pattern)
+    return p == 0 ? 0 : freq[p]
+end
+
+"""
+$(SIGNATURES)
+
 Find all matches of a given pattern (including overlapping ones) in a suffix automaton, with the help of precalculated inverse links.
 
 If the keyword argument `ascending` is set to `true`, the results will be sorted in place in the ascending order. Otherwise, the results will be unordered.
@@ -243,7 +285,7 @@ julia> findall("da", sam, invlink; ascending=true)
  18:19
 ```
 """
-function Base.findall(pattern, sam::SuffixAutomaton, invlink; ascending=false)
+function Base.findall(pattern, sam::SuffixAutomaton, invlink=inverselink(sam); ascending=false)
     p = _findfirst(sam, pattern)
     if p == 0
         return UnitRange{Int}[]
@@ -253,11 +295,6 @@ function Base.findall(pattern, sam::SuffixAutomaton, invlink; ascending=false)
         sort!(results)
     end
     return results
-end
-
-function Base.findall(pattern, sam::SuffixAutomaton; ascending=false)
-    invlink = inverselink(sam)
-    return findall(pattern, sam, invlink; ascending=ascending), invlink
 end
 
 """

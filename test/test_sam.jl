@@ -26,19 +26,23 @@
 
     @testset "Pattern Matching" begin
         @testset "Fixed" begin
+            @test count("a", SuffixAutomaton("aba")) == 2
             @test findfirst("a", SuffixAutomaton("aba")) == 1:1
-            @test findall("a", SuffixAutomaton("aba"); ascending=true)[1] == [1:1, 3:3]
+            @test findall("a", SuffixAutomaton("aba"); ascending=true) == [1:1, 3:3]
 
+            @test count("ac", SuffixAutomaton("aaccaa")) == 1
             @test findfirst("ac", SuffixAutomaton("aaccaa")) == 2:3
-            @test findall("ac", SuffixAutomaton("aaccaa"))[1] == [2:3]
+            @test findall("ac", SuffixAutomaton("aaccaa")) == [2:3]
         end
 
         @testset "Random $alphabet" for alphabet in ['a':'d', 'a':'i', 'a':'z']
             s = join(rand(alphabet, 100000))
             sam = SuffixAutomaton(s)
             invlink = inverselink(sam)
+            freq = freqcount(sam)
             for _ in 1:100
                 t = join(rand(alphabet, 5))
+                @test count(t, s; overlap=true) == count(t, sam, freq)
                 @test findfirst(t, s) == findfirst(t, sam)
                 @test findall(t, s; overlap=true) == findall(t, sam, invlink; ascending=true)
             end
