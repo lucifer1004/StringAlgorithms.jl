@@ -219,15 +219,13 @@ function _findfirst(sam::SuffixAutomaton, pattern)
     return p
 end
 
-function _findall(sam::SuffixAutomaton, invlink, v, pattern_len)
-    results = UnitRange{Int}[]
+function _findall!(results, sam::SuffixAutomaton, invlink, v, pattern_len)
     if !sam.isclone[v]
         push!(results, sam.firstpos[v]-pattern_len+1:sam.firstpos[v])
     end
     for u in invlink[v]
-        append!(results, _findall(sam, invlink, u, pattern_len))
+        _findall!(results, sam, invlink, u, pattern_len)
     end
-    return results
 end
 
 """
@@ -286,11 +284,17 @@ julia> findall("da", sam, invlink; ascending=true)
 ```
 """
 function Base.findall(pattern, sam::SuffixAutomaton, invlink=inverselink(sam); ascending=false)
-    p = _findfirst(sam, pattern)
-    if p == 0
-        return UnitRange{Int}[]
+    # Handle one-element patterns specially
+    if length(pattern) == 1
+        return UnitRange{Int}[i:i for i in eachindex(sam) if sam[i] == pattern[1]]
     end
-    results = _findall(sam, invlink, p, length(pattern))
+
+    p = _findfirst(sam, pattern)
+    results = UnitRange{Int}[]
+    if p == 0
+        return results
+    end
+    _findall!(results, sam, invlink, p, length(pattern))
     if ascending
         sort!(results)
     end
