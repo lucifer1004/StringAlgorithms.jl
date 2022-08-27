@@ -26,7 +26,10 @@
 
     @testset "Pattern Matching" begin
         @testset "Fixed" begin
+            @test findfirst("a", SuffixAutomaton("aba")) == 1:1
             @test findall("a", SuffixAutomaton("aba"); ascending=true)[1] == [1:1, 3:3]
+
+            @test findfirst("ac", SuffixAutomaton("aaccaa")) == 2:3
             @test findall("ac", SuffixAutomaton("aaccaa"))[1] == [2:3]
         end
 
@@ -36,6 +39,7 @@
             invlink = inverselink(sam)
             for _ in 1:100
                 t = join(rand(alphabet, 5))
+                @test findfirst(t, s) == findfirst(t, sam)
                 @test findall(t, s; overlap=true) == findall(t, sam, invlink; ascending=true)
             end
         end

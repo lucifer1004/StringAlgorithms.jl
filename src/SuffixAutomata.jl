@@ -190,6 +190,17 @@ function inverselink(sam::SuffixAutomaton)
     return invlink
 end
 
+function _findfirst(sam::SuffixAutomaton, pattern)
+    p = 1
+    for vi in pattern
+        if !haskey(sam.children, (p, vi))
+            return 0
+        end
+        p = sam.children[(p, vi)]
+    end
+    return p
+end
+
 function _findall(sam::SuffixAutomaton, invlink, v, pattern_len)
     results = UnitRange{Int}[]
     if !sam.isclone[v]
@@ -233,12 +244,9 @@ julia> findall("da", sam, invlink; ascending=true)
 ```
 """
 function Base.findall(pattern, sam::SuffixAutomaton, invlink; ascending=false)
-    p = 1
-    for vi in pattern
-        if !haskey(sam.children, (p, vi))
-            return UnitRange{Int}[]
-        end
-        p = sam.children[(p, vi)]
+    p = _findfirst(sam, pattern)
+    if p == 0
+        return UnitRange{Int}[]
     end
     results = _findall(sam, invlink, p, length(pattern))
     if ascending
@@ -250,6 +258,28 @@ end
 function Base.findall(pattern, sam::SuffixAutomaton; ascending=false)
     invlink = inverselink(sam)
     return findall(pattern, sam, invlink; ascending=ascending), invlink
+end
+
+"""
+$(SIGNATURES)
+
+Find the first match of a given pattern in a suffix automaton.
+
+If you need to perform multiple searches on the same text, this function can be much faster than Julia standard library's implementation, especially when the pattern is long but does not occur in the string to be searched. 
+
+```jldoctest
+julia> sam = SuffixAutomaton("abcdabdabcddabcabdab");
+
+julia> findfirst("cda", sam)
+3:5
+
+julia> findfirst("cabd", sam)
+15:18
+```
+"""
+function Base.findfirst(pattern, sam::SuffixAutomaton)
+    p = _findfirst(sam, pattern)
+    return p == 0 ? nothing : sam.firstpos[p]-length(pattern)+1:sam.firstpos[p]
 end
 
 """
