@@ -3,5 +3,8 @@ uuid = "643b1d47-3f53-4b81-a7a3-63e902513088"
 authors = ["Gabriel Wu <wuzihua@pku.edu.cn> and contributors"]
 version = "0.1.0"
 
+[deps]
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+
 [compat]
 julia = "1.8"

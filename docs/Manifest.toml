@@ -24,9 +24,9 @@ version = "0.9.1"
 
 [[deps.Documenter]]
 deps = ["ANSIColoredPrinters", "Base64", "Dates", "DocStringExtensions", "IOCapture", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Markdown", "REPL", "Test", "Unicode"]
-git-tree-sha1 = "ee945ed10767de73cf8b610951b98228cb65af80"
+git-tree-sha1 = "6030186b00a38e9d0434518627426570aac2ef95"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-version = "0.27.22"
+version = "0.27.23"
 
 [[deps.IOCapture]]
 deps = ["Logging", "Random"]
@@ -64,9 +64,9 @@ version = "1.2.0"
 
 [[deps.Parsers]]
 deps = ["Dates"]
-git-tree-sha1 = "0044b23da09b5608b4ecacb4e5e6c6332f833a7e"
+git-tree-sha1 = "3d5bf43e3e8b412656404ed9466f1dcbf7c50269"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.3.2"
+version = "2.4.0"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -91,6 +91,7 @@ uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 
 [[deps.StringAlgorithms]]
+deps = ["DocStringExtensions"]
 path = ".."
 uuid = "643b1d47-3f53-4b81-a7a3-63e902513088"
 version = "0.1.0"

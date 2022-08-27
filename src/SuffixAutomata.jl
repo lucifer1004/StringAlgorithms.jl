@@ -1,9 +1,10 @@
-export SuffixAutomaton, nodeoriented, toposort, longestcommonsubstring, minimumrotation, maximumrotation
+export SuffixAutomaton, nodeoriented, toposort, inverselink, longestcommonsubstring, minimumrotation, maximumrotation
 
 struct SuffixAutomatonNode{T}
     len::Int
     link::Int
     firstpos::Int
+    isclone::Bool
     children::Dict{T,Int}
 end
 
@@ -12,6 +13,7 @@ mutable struct SuffixAutomaton{T} <: AbstractVector{T}
     const len::Vector{Int}
     const link::Vector{Int}
     const firstpos::Vector{Int}
+    const isclone::Vector{Bool}
     const nodefirst::Vector{Int}
     const nodelast::Vector{Int}
     const nxt::Vector{Int}
@@ -36,6 +38,7 @@ SuffixAutomaton{T}() where {T} = SuffixAutomaton{T}(
     [0], # len
     [0], # link
     [0], # firstpos
+    [false], # isclone
     [0], # nodefirst
     [0], # nodelast
     Int[], # nxt
@@ -56,26 +59,28 @@ end
 
 function Base.sizehint!(sam::SuffixAutomaton, sz)
     sizehint!(sam.values, sz)
-    sizehint!(sam.len, sz + 1)
-    sizehint!(sam.link, sz + 1)
-    sizehint!(sam.firstpos, sz + 1)
-    sizehint!(sam.nodefirst, sz + 1)
-    sizehint!(sam.nodelast, sz + 1)
-    sizehint!(sam.nxt, 2sz)
-    sizehint!(sam.listvalues, 2sz)
-    sizehint!(sam.children, 2sz)
+    sizehint!(sam.len, 2sz)
+    sizehint!(sam.link, 2sz)
+    sizehint!(sam.firstpos, 2sz)
+    sizehint!(sam.isclone, 2sz)
+    sizehint!(sam.nodefirst, 2sz)
+    sizehint!(sam.nodelast, 2sz)
+    sizehint!(sam.nxt, 3sz)
+    sizehint!(sam.listvalues, 3sz)
+    sizehint!(sam.children, 3sz)
 end
 
-function _insertnode!(sam::SuffixAutomaton, len, link, firstpos)
+function _insertnode!(sam::SuffixAutomaton, len, link, firstpos; isclone=false)
     push!(sam.len, len)
     push!(sam.link, link)
     push!(sam.firstpos, firstpos)
+    push!(sam.isclone, isclone)
     push!(sam.nodefirst, 0)
     push!(sam.nodelast, 0)
 end
 
 function _clonenode!(sam::SuffixAutomaton, len, source)
-    _insertnode!(sam, len, sam.link[source], sam.firstpos[source])
+    _insertnode!(sam, len, sam.link[source], sam.firstpos[source]; isclone=true)
     current = lastindex(sam.len)
     p = sam.nodefirst[source]
     while p != 0
@@ -132,13 +137,12 @@ function Base.push!(sam::SuffixAutomaton{T}, value::T) where {T}
 end
 
 """
+$(SIGNATURES)
+
 Transform the internal representation of the suffix automaton into a more user-friendly node-oriented representation, which might be useful when users want to access some internal information.
 """
 function nodeoriented(sam::SuffixAutomaton{T}) where {T}
     map(eachindex(sam.len)) do i
-        len = sam.len[i]
-        link = sam.link[i]
-        firstpos = sam.firstpos[i]
         children = Dict{T,Int}()
         p = sam.nodefirst[i]
         while p != 0
@@ -146,11 +150,13 @@ function nodeoriented(sam::SuffixAutomaton{T}) where {T}
             children[key] = sam.children[(i, key)]
             p = sam.nxt[p]
         end
-        SuffixAutomatonNode(len, link, firstpos, children)
+        SuffixAutomatonNode(sam.len[i], sam.link[i], sam.firstpos[i], sam.isclone[i], children)
     end
 end
 
 """
+$(SIGNATURES)
+
 Find the topological order of all nodes in a suffix automaton.
 """
 function toposort(sam::SuffixAutomaton)
@@ -171,9 +177,93 @@ function toposort(sam::SuffixAutomaton)
 end
 
 """
+$(SIGNATURES)
+
+Build an inverse graph from the links of a suffix automaton.
+"""
+function inverselink(sam::SuffixAutomaton)
+    n = length(sam.len)
+    invlink = [Int[] for _ in 1:n]
+    for i in 2:n
+        push!(invlink[sam.link[i]], i)
+    end
+    return invlink
+end
+
+function _findall(sam::SuffixAutomaton, invlink, v, pattern_len)
+    results = UnitRange{Int}[]
+    if !sam.isclone[v]
+        push!(results, sam.firstpos[v]-pattern_len+1:sam.firstpos[v])
+    end
+    for u in invlink[v]
+        append!(results, _findall(sam, invlink, u, pattern_len))
+    end
+    return results
+end
+
+"""
+$(SIGNATURES)
+
+Find all matches of a given pattern (including overlapping ones) in a suffix automaton, with the help of precalculated inverse links.
+
+If the keyword argument `ascending` is set to `true`, the results will be sorted in place in the ascending order. Otherwise, the results will be unordered.
+
+If you need to perform multiple searches on the same text, this function can be much faster than Julia standard library's implementation, especially when the pattern is long but does not occur in the string to be searched. 
+
+```jldoctest
+julia> sam = SuffixAutomaton("abcdabdabcddabcabdab");
+
+julia> invlink = inverselink(sam);
+
+julia> findall("ab", sam, invlink; ascending=true)
+6-element Vector{UnitRange{Int64}}:
+ 1:2
+ 5:6
+ 8:9
+ 13:14
+ 16:17
+ 19:20
+
+julia> findall("da", sam, invlink; ascending=true)
+4-element Vector{UnitRange{Int64}}:
+ 4:5
+ 7:8
+ 12:13
+ 18:19
+```
+"""
+function Base.findall(pattern, sam::SuffixAutomaton, invlink; ascending=false)
+    p = 1
+    for vi in pattern
+        if !haskey(sam.children, (p, vi))
+            return UnitRange{Int}[]
+        end
+        p = sam.children[(p, vi)]
+    end
+    results = _findall(sam, invlink, p, length(pattern))
+    if ascending
+        sort!(results)
+    end
+    return results
+end
+
+function Base.findall(pattern, sam::SuffixAutomaton; ascending=false)
+    invlink = inverselink(sam)
+    return findall(pattern, sam, invlink; ascending=ascending), invlink
+end
+
+"""
+$(SIGNATURES)
+
 Find the longest common non-empty substring/sub-vector of multiple strings/vectors. 
 
-When there are more than one with the same length, all distinct answers will be returned in a random order.
+When there are more than one with the same length, all distinct answers will be returned in a nondeterministic order.
+
+```jldoctest
+julia> longestcommonsubstring("ababab", "bababa", "abaabb")
+1-element Vector{String}:
+ "aba"
+```
 """
 function longestcommonsubstring(args...; lengthonly=false)
     length(args) == 0 && error("At least one string/vector should be given!")
@@ -242,9 +332,16 @@ end
 longestcommonsubstring(v::AbstractVector) = longestcommonsubstring(v...)
 
 """
+$(SIGNATURES)
+
 Find the minimum of all rotations of the given string/vector. 
 
 For example, string `aab` has three rotations:, `aab`, `aba`, `baa`, and `aab` is the minimum rotation.
+
+```jldoctest
+julia> minimumrotation("aab")
+"aab"
+```
 """
 function minimumrotation(s)
     n = length(s)
@@ -273,9 +370,16 @@ function minimumrotation(s)
 end
 
 """
+$(SIGNATURES)
+
 Find the maximum of all rotations of the given string/vector.
 
 For example, string `aab` has three rotations:, `aab`, `aba`, `baa`, and `baa` is the maximum rotation.
+
+```jldoctest
+julia> maximumrotation("aab")
+"baa"
+```
 """
 function maximumrotation(s)
     n = length(s)

@@ -24,6 +24,23 @@
         end
     end
 
+    @testset "Pattern Matching" begin
+        @testset "Fixed" begin
+            @test findall("a", SuffixAutomaton("aba"); ascending=true)[1] == [1:1, 3:3]
+            @test findall("ac", SuffixAutomaton("aaccaa"))[1] == [2:3]
+        end
+
+        @testset "Random $alphabet" for alphabet in ['a':'d', 'a':'i', 'a':'z']
+            s = join(rand(alphabet, 100000))
+            sam = SuffixAutomaton(s)
+            invlink = inverselink(sam)
+            for _ in 1:100
+                t = join(rand(alphabet, 5))
+                @test findall(t, s; overlap=true) == findall(t, sam, invlink; ascending=true)
+            end
+        end
+    end
+
     @testset "Longest Common Substring" begin
         function naive(args...)
             shortest = argmin(length.(args))

@@ -1,6 +1,8 @@
 export PrefixAutomaton, prefix_function, alphabet, reversealphabet, trans
 
 """
+$(SIGNATURES)
+
 For each prefix of the given vector, calculate the maximum length such that its nontrivial prefix (not itself) equals to its suffix.
 
 For example, for string `ababc`,
@@ -57,7 +59,9 @@ struct PrefixAutomaton{T}
 end
 
 """
-Build an automaton based on the prefix function of a given vector. This is useful when the vector to be searched within is very large.
+$(SIGNATURES)
+
+Build an automaton based on the prefix function of a given vector and a fixed alphabet. This is useful when the vector to be searched within is very large.
 """
 function PrefixAutomaton{T}(v, alphabet) where {T}
     alphabet = collect(alphabet)

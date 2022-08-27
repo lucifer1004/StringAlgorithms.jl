@@ -1,5 +1,7 @@
 module StringAlgorithms
 
+using DocStringExtensions
+
 include("manacher.jl")
 include("z_algorithm.jl")
 include("PrefixAutomata.jl")

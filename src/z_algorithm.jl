@@ -1,6 +1,8 @@
 export z_algorithm
 
 """
+$(SIGNATURES)
+
 Z Algorithm calculates the longest common prefix of each suffix of the given vector and the whole vector itself. Specially, the Z value of the whole vector is forced to be 0.
 
 # Sample usages
