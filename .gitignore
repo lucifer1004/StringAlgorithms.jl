@@ -4,3 +4,4 @@
 /docs/build/
 /benchmark/*.json
 /benchmark/results.md
+/Manifest.toml
